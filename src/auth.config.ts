@@ -2,6 +2,7 @@ import type { NextAuthConfig } from "next-auth";
 
 export default {
   session: { strategy: "jwt" },
+  trustHost: true,
   pages: {
     signIn: "/login",
   },
