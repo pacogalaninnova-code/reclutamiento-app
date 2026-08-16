@@ -1,0 +1,171 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Rol {
+  ADMIN
+  RECLUTADOR
+  EMPRESA
+  CANDIDATO
+}
+
+enum Sector {
+  CERVECERIAS
+  RETAIL
+  RESTAURANTES
+  HOTELES
+  TURISMO
+  EVENTOS
+  LOGISTICA
+  CATERING
+  BALNEARIOS
+}
+
+enum Temporada {
+  SEMANA_SANTA
+  VERANO
+  FIESTAS_PATRIAS
+  FIN_DE_ANO
+}
+
+enum EstadoVacante {
+  ACTIVA
+  CUBIERTA
+  CERRADA
+}
+
+enum EstadoCandidato {
+  DISPONIBLE
+  CONTRATADO
+  INACTIVO
+}
+
+enum EtapaProceso {
+  APLICO
+  ENTREVISTA
+  DOCUMENTOS
+  EVALUACION
+  FIRMA_CONTRATO
+  CONTRATADO
+}
+
+enum TipoDocumento {
+  INE
+  COMPROBANTE_DOMICILIO
+  CARTA_RECOMENDACION
+  COMPROBANTE_ESTUDIOS
+  LICENCIA_CONDUCIR
+  CURP
+  RFC
+}
+
+enum EstadoDocumento {
+  PENDIENTE
+  ADJUNTO
+}
+
+model Usuario {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  nombre       String
+  rol          Rol
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  empresaId   String?  @unique
+  empresa     Empresa? @relation(fields: [empresaId], references: [id])
+
+  candidatoId String?    @unique
+  candidato   Candidato? @relation(fields: [candidatoId], references: [id])
+}
+
+model Empresa {
+  id                String     @id @default(cuid())
+  nombre            String
+  sector            Sector
+  ciudad            String
+  contacto          String?
+  email             String?
+  telefono          String?
+  temporadaPrincipal Temporada?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  usuario  Usuario?
+  vacantes Vacante[]
+}
+
+model Vacante {
+  id        String        @id @default(cuid())
+  empresaId String
+  empresa   Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  puesto    String
+  sector    Sector
+  ciudad    String
+  plazas    Int
+  salario   Int
+  temporada Temporada
+  estado    EstadoVacante @default(ACTIVA)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  aplicaciones Aplicacion[]
+}
+
+model Candidato {
+  id              String          @id @default(cuid())
+  nombre          String
+  edad            Int?
+  ciudad          String?
+  telefono        String?
+  email           String?
+  experiencia     String?
+  sectores        Sector[]
+  disponibilidad  String?
+  salarioEsperado Int?
+  estado          EstadoCandidato @default(DISPONIBLE)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  usuario      Usuario?
+  documentos   Documento[]
+  aplicaciones Aplicacion[]
+}
+
+model Aplicacion {
+  id          String       @id @default(cuid())
+  vacanteId   String
+  vacante     Vacante      @relation(fields: [vacanteId], references: [id], onDelete: Cascade)
+  candidatoId String
+  candidato   Candidato    @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
+  etapa       EtapaProceso @default(APLICO)
+  termometro  Int          @default(5)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([vacanteId, candidatoId])
+}
+
+model Documento {
+  id            String          @id @default(cuid())
+  candidatoId   String
+  candidato     Candidato       @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
+  tipo          TipoDocumento
+  estado        EstadoDocumento @default(PENDIENTE)
+  nombreArchivo String?
+  url           String?
+  uploadedAt    DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@unique([candidatoId, tipo])
+}
