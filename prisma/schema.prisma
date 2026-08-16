@@ -37,9 +37,11 @@ enum Temporada {
 }
 
 enum EstadoVacante {
+  PENDIENTE
   ACTIVA
   CUBIERTA
   CERRADA
+  RECHAZADA
 }
 
 enum EstadoCandidato {

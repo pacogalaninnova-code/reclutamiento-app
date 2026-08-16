@@ -13,7 +13,7 @@ export default async function CandidatoLayout({ children }: { children: ReactNod
 
   return (
     <div className="min-h-screen bg-cream">
-      <Header nav={NAV} nombre={session.user.name ?? ""} badge="Portal Candidato" />
+      <Header nav={NAV} nombre={session.user.name ?? ""} badge="Portal Candidato" cuentaHref="/candidato/cuenta" />
       <main className="max-w-[900px] mx-auto">{children}</main>
     </div>
   );

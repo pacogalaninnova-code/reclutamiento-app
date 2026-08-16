@@ -38,6 +38,7 @@ export async function solicitarVacante(formData: FormData) {
       plazas: data.plazas,
       salario: data.salario,
       temporada: data.temporada as never,
+      estado: "PENDIENTE",
     },
   });
 

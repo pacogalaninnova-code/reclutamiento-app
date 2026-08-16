@@ -13,7 +13,7 @@ export default async function EmpresaLayout({ children }: { children: ReactNode 
 
   return (
     <div className="min-h-screen bg-cream">
-      <Header nav={NAV} nombre={session.user.name ?? ""} badge="Portal Empresa" />
+      <Header nav={NAV} nombre={session.user.name ?? ""} badge="Portal Empresa" cuentaHref="/empresa/cuenta" />
       <main className="max-w-[1200px] mx-auto">{children}</main>
     </div>
   );

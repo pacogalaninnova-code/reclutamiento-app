@@ -23,6 +23,8 @@ const ESTADO_COLORS: Record<string, string> = {
   CUBIERTA: "text-muted bg-[#f0f0f0]",
   CERRADA: "text-muted bg-[#f0f0f0]",
   INACTIVO: "text-muted bg-[#f0f0f0]",
+  PENDIENTE: "text-gold bg-[#fff8e7]",
+  RECHAZADA: "text-red bg-[#fff0ef]",
 };
 
 export function Badge({

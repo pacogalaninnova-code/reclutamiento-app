@@ -8,10 +8,12 @@ export function Header({
   nav,
   nombre,
   badge,
+  cuentaHref,
 }: {
   nav: { href: string; icon: string; label: string }[];
   nombre: string;
   badge?: string;
+  cuentaHref?: string;
 }) {
   const pathname = usePathname();
 
@@ -47,7 +49,18 @@ export function Header({
         })}
       </nav>
       <div className="flex items-center gap-2.5">
-        <span className="text-xs text-white/50">👤 {nombre}</span>
+        {cuentaHref ? (
+          <Link
+            href={cuentaHref}
+            className={`text-xs ${
+              pathname === cuentaHref ? "text-coral font-bold" : "text-white/50 hover:text-white/80"
+            }`}
+          >
+            👤 {nombre}
+          </Link>
+        ) : (
+          <span className="text-xs text-white/50">👤 {nombre}</span>
+        )}
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
           className="border border-border/40 text-white/80 rounded-md px-2.5 py-1 text-[11px] font-bold cursor-pointer hover:bg-white/10"

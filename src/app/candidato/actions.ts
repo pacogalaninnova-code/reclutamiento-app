@@ -1,5 +1,6 @@
 "use server";
 
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
@@ -11,6 +12,51 @@ async function requireCandidato() {
     throw new Error("No autorizado");
   }
   return session.user.candidatoId;
+}
+
+const perfilSchema = z.object({
+  nombre: z.string().min(1),
+  edad: z.coerce.number().int().positive().optional(),
+  ciudad: z.string().optional(),
+  telefono: z.string().optional(),
+  email: z.string().email().optional().or(z.literal("")),
+  experiencia: z.string().optional(),
+  disponibilidad: z.string().optional(),
+  salarioEsperado: z.coerce.number().int().positive().optional(),
+});
+
+export async function editarMiPerfil(formData: FormData) {
+  const candidatoId = await requireCandidato();
+  const sectores = formData.getAll("sectores") as string[];
+  const data = perfilSchema.parse({
+    nombre: formData.get("nombre"),
+    edad: formData.get("edad") || undefined,
+    ciudad: formData.get("ciudad") || undefined,
+    telefono: formData.get("telefono") || undefined,
+    email: formData.get("email") || undefined,
+    experiencia: formData.get("experiencia") || undefined,
+    disponibilidad: formData.get("disponibilidad") || undefined,
+    salarioEsperado: formData.get("salarioEsperado") || undefined,
+  });
+
+  await prisma.candidato.update({
+    where: { id: candidatoId },
+    data: {
+      nombre: data.nombre,
+      edad: data.edad,
+      ciudad: data.ciudad || null,
+      telefono: data.telefono || null,
+      email: data.email || null,
+      experiencia: data.experiencia || null,
+      disponibilidad: data.disponibilidad || null,
+      salarioEsperado: data.salarioEsperado,
+      sectores: sectores as never,
+    },
+  });
+
+  revalidatePath("/candidato");
+  revalidatePath("/candidato/cuenta");
+  revalidatePath("/reclutador/candidatos");
 }
 
 export async function subirMiDocumento(tipo: string, formData: FormData) {

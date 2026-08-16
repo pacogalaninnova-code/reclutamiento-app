@@ -3,7 +3,15 @@
 import { useState, useTransition } from "react";
 import { Card, Badge, Button, Modal, Field, Input, Select, Termometro } from "@/components/ui";
 import { SECTOR_LABEL, TEMPORADA_INFO, ETAPA_LABEL, ETAPA_COLOR, fmt, comision, siguienteEtapa } from "@/lib/dominio";
-import { crearVacante, agregarCandidato, avanzarEtapa, setTermometro } from "./actions";
+import {
+  crearVacante,
+  editarVacante,
+  agregarCandidato,
+  avanzarEtapa,
+  setTermometro,
+  aprobarVacante,
+  rechazarVacante,
+} from "./actions";
 
 type Empresa = { id: string; nombre: string };
 type Aplicacion = {
@@ -17,6 +25,7 @@ type Vacante = {
   puesto: string;
   sector: string;
   ciudad: string;
+  empresaId: string;
   plazas: number;
   salario: number;
   temporada: string;
@@ -25,6 +34,69 @@ type Vacante = {
   aplicaciones: Aplicacion[];
 };
 type Candidato = { id: string; nombre: string; experiencia: string | null; sectores: string[]; estado: string };
+
+function VacanteFormModal({
+  titulo,
+  vacante,
+  empresas,
+  onGuardar,
+  onClose,
+}: {
+  titulo: string;
+  vacante?: Vacante;
+  empresas: Empresa[];
+  onGuardar: (formData: FormData) => Promise<void>;
+  onClose: () => void;
+}) {
+  const [pending, startTransition] = useTransition();
+
+  function onSubmit(formData: FormData) {
+    startTransition(async () => {
+      await onGuardar(formData);
+    });
+  }
+
+  return (
+    <Modal title={titulo} onClose={onClose}>
+      <form action={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+        <Field label="Empresa">
+          <Select name="empresaId" required defaultValue={vacante?.empresaId ?? ""}>
+            <option value="" disabled>Seleccionar...</option>
+            {empresas.map((e) => (
+              <option key={e.id} value={e.id}>{e.nombre}</option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Puesto"><Input name="puesto" placeholder="Ej: Promotor de Ventas" defaultValue={vacante?.puesto} required /></Field>
+        <Field label="Sector">
+          <Select name="sector" required defaultValue={vacante?.sector ?? ""}>
+            <option value="" disabled>Seleccionar...</option>
+            {Object.entries(SECTOR_LABEL).map(([k, v]) => (
+              <option key={k} value={k}>{v}</option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Temporada">
+          <Select name="temporada" required defaultValue={vacante?.temporada ?? ""}>
+            <option value="" disabled>Seleccionar...</option>
+            {Object.entries(TEMPORADA_INFO).map(([k, v]) => (
+              <option key={k} value={k}>{v.label}</option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Ciudad"><Input name="ciudad" placeholder="Ej: Tuxtla Gutiérrez" defaultValue={vacante?.ciudad} required /></Field>
+        <Field label="No. Plazas"><Input name="plazas" type="number" min={1} defaultValue={vacante?.plazas} required /></Field>
+        <div className="md:col-span-2">
+          <Field label="Salario mensual ($)"><Input name="salario" type="number" placeholder="Ej: 6500" defaultValue={vacante?.salario} required /></Field>
+        </div>
+        <div className="md:col-span-2 flex gap-2.5 mt-1">
+          <Button type="submit" disabled={pending}>{pending ? "Guardando..." : vacante ? "Guardar cambios" : "Publicar"}</Button>
+          <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
 
 export function VacantesView({
   vacantes,
@@ -36,10 +108,12 @@ export function VacantesView({
   candidatos: Candidato[];
 }) {
   const [showForm, setShowForm] = useState(false);
+  const [editandoId, setEditandoId] = useState<string | null>(null);
   const [procId, setProcId] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   const vAct = vacantes.find((v) => v.id === procId) ?? null;
+  const editando = vacantes.find((v) => v.id === editandoId) ?? null;
   const disponibles = vAct
     ? candidatos.filter(
         (c) =>
@@ -49,13 +123,6 @@ export function VacantesView({
       )
     : [];
 
-  function onSubmit(formData: FormData) {
-    startTransition(async () => {
-      await crearVacante(formData);
-      setShowForm(false);
-    });
-  }
-
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-5">
@@ -64,6 +131,15 @@ export function VacantesView({
           <p className="text-muted text-sm mt-0.5">
             {vacantes.filter((v) => v.estado === "ACTIVA").length} activas ·{" "}
             {vacantes.filter((v) => v.estado === "CUBIERTA").length} cubiertas
+            {vacantes.some((v) => v.estado === "PENDIENTE") && (
+              <>
+                {" "}
+                ·{" "}
+                <span className="text-gold font-bold">
+                  {vacantes.filter((v) => v.estado === "PENDIENTE").length} por aprobar
+                </span>
+              </>
+            )}
           </p>
         </div>
         <Button onClick={() => setShowForm(true)}>+ Publicar Vacante</Button>
@@ -74,15 +150,29 @@ export function VacantesView({
           const t = TEMPORADA_INFO[v.temporada];
           const contratados = v.aplicaciones.filter((a) => a.etapa === "CONTRATADO").length;
           const sel = v.id === procId;
+          const esPendiente = v.estado === "PENDIENTE";
           return (
             <Card
               key={v.id}
-              className={`cursor-pointer ${sel ? "!border-coral !border-2" : ""}`}
+              className={`${esPendiente ? "" : "cursor-pointer"} ${sel ? "!border-coral !border-2" : ""}`}
               >
-              <div onClick={() => setProcId(sel ? null : v.id)}>
+              <div onClick={() => !esPendiente && setProcId(sel ? null : v.id)}>
                 <div className="flex justify-between items-center">
                   <Badge estado={v.estado}>{v.estado}</Badge>
-                  <span className="text-lg">{t.icono}</span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditandoId(v.id);
+                      }}
+                      className="text-muted hover:text-coral text-sm"
+                      title="Editar vacante"
+                    >
+                      ✏️
+                    </button>
+                    <span className="text-lg">{t.icono}</span>
+                  </div>
                 </div>
                 <div className="font-extrabold text-navy text-[15px] mt-2.5">{v.puesto}</div>
                 <div className="text-muted text-xs mt-0.5">📍 {v.ciudad} · {v.plazas} plaza(s)</div>
@@ -90,12 +180,33 @@ export function VacantesView({
                 <div className="font-bold text-coral text-sm mt-1.5">
                   {fmt(v.salario)}<span className="text-muted font-normal">/mes</span>
                 </div>
-                <div className="bg-cream rounded-lg px-2.5 py-1.5 mt-2.5 flex justify-between items-center">
-                  <span className="text-[11px] text-muted">Comisión est.</span>
-                  <span className="text-xs font-extrabold text-gold">{fmt(contratados * comision(v.salario))}</span>
-                </div>
-                <div className="mt-2 text-[11px] text-coral font-bold text-right">Ver proceso →</div>
+                {!esPendiente && (
+                  <div className="bg-cream rounded-lg px-2.5 py-1.5 mt-2.5 flex justify-between items-center">
+                    <span className="text-[11px] text-muted">Comisión est.</span>
+                    <span className="text-xs font-extrabold text-gold">{fmt(contratados * comision(v.salario))}</span>
+                  </div>
+                )}
+                {!esPendiente && (
+                  <div className="mt-2 text-[11px] text-coral font-bold text-right">Ver proceso →</div>
+                )}
               </div>
+              {esPendiente && (
+                <div className="mt-3 pt-3 border-t border-border flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => startTransition(async () => aprobarVacante(v.id))}
+                  >
+                    ✅ Aprobar
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    onClick={() => startTransition(async () => rechazarVacante(v.id))}
+                  >
+                    ✕ Rechazar
+                  </Button>
+                </div>
+              )}
             </Card>
           );
         })}
@@ -160,7 +271,7 @@ export function VacantesView({
                         rel="noreferrer"
                         className="text-[11px] font-bold px-3 py-1.5 rounded-lg border border-border text-muted"
                       >
-                        📣 Notificar
+                        💬 WhatsApp
                       </a>
                     )}
                   </div>
@@ -196,44 +307,28 @@ export function VacantesView({
       </div>
 
       {showForm && (
-        <Modal title="Publicar Nueva Vacante" onClose={() => setShowForm(false)}>
-          <form action={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-            <Field label="Empresa">
-              <Select name="empresaId" required defaultValue="">
-                <option value="" disabled>Seleccionar...</option>
-                {empresas.map((e) => (
-                  <option key={e.id} value={e.id}>{e.nombre}</option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="Puesto"><Input name="puesto" placeholder="Ej: Promotor de Ventas" required /></Field>
-            <Field label="Sector">
-              <Select name="sector" required defaultValue="">
-                <option value="" disabled>Seleccionar...</option>
-                {Object.entries(SECTOR_LABEL).map(([k, v]) => (
-                  <option key={k} value={k}>{v}</option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="Temporada">
-              <Select name="temporada" required defaultValue="">
-                <option value="" disabled>Seleccionar...</option>
-                {Object.entries(TEMPORADA_INFO).map(([k, v]) => (
-                  <option key={k} value={k}>{v.label}</option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="Ciudad"><Input name="ciudad" placeholder="Ej: Tuxtla Gutiérrez" required /></Field>
-            <Field label="No. Plazas"><Input name="plazas" type="number" min={1} required /></Field>
-            <div className="md:col-span-2">
-              <Field label="Salario mensual ($)"><Input name="salario" type="number" placeholder="Ej: 6500" required /></Field>
-            </div>
-            <div className="md:col-span-2 flex gap-2.5 mt-1">
-              <Button type="submit" disabled={pending}>{pending ? "Publicando..." : "Publicar"}</Button>
-              <Button type="button" variant="ghost" onClick={() => setShowForm(false)}>Cancelar</Button>
-            </div>
-          </form>
-        </Modal>
+        <VacanteFormModal
+          titulo="Publicar Nueva Vacante"
+          empresas={empresas}
+          onGuardar={async (fd) => {
+            await crearVacante(fd);
+            setShowForm(false);
+          }}
+          onClose={() => setShowForm(false)}
+        />
+      )}
+
+      {editando && (
+        <VacanteFormModal
+          titulo={`Editar: ${editando.puesto}`}
+          vacante={editando}
+          empresas={empresas}
+          onGuardar={async (fd) => {
+            await editarVacante(editando.id, fd);
+            setEditandoId(null);
+          }}
+          onClose={() => setEditandoId(null)}
+        />
       )}
     </div>
   );

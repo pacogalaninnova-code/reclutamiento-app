@@ -27,3 +27,10 @@ Next.js (App Router) + TypeScript + Prisma/PostgreSQL + NextAuth (credentials) +
 - `NEXTAUTH_SECRET` — valor aleatorio seguro
 - `NEXTAUTH_URL` — URL pública del deployment
 - `BLOB_READ_WRITE_TOKEN` — token de [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) para subir documentos de candidatos
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` — servidor SMTP para las notificaciones automáticas por correo al candidato cuando avanza de etapa (cualquier proveedor: Resend, Mailgun, Gmail, etc.). Si se dejan vacías, el envío se omite y solo se registra en el log del servidor — la app sigue funcionando normalmente.
+
+## Funcionalidad
+
+- **Aprobación de vacantes**: cuando una empresa solicita una vacante desde su portal, queda en estado `PENDIENTE` hasta que un reclutador la aprueba o rechaza desde `/reclutador/vacantes`.
+- **Notificaciones automáticas**: al avanzar la etapa de un candidato en el pipeline, se le envía un correo automático (si SMTP está configurado). El botón de WhatsApp sigue siendo manual (abre un enlace `wa.me` prellenado).
+- **Mi Cuenta**: cada usuario (cualquier rol) puede cambiar su propia contraseña desde el ícono de su nombre en el header.

@@ -24,7 +24,7 @@ export default async function ReclutadorLayout({
 
   return (
     <div className="min-h-screen bg-cream">
-      <Header nav={NAV} nombre={session.user.name ?? ""} badge="Chiapas" />
+      <Header nav={NAV} nombre={session.user.name ?? ""} badge="Chiapas" cuentaHref="/reclutador/cuenta" />
       <main className="max-w-[1200px] mx-auto">{children}</main>
     </div>
   );

@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { Card, Badge, Button, Modal, Field, Input } from "@/components/ui";
 import { SECTOR_LABEL, DOCUMENTOS, fmt, docPct } from "@/lib/dominio";
-import { crearCandidato, eliminarCandidato, subirDocumento, quitarDocumento } from "./actions";
+import { crearCandidato, editarCandidato, eliminarCandidato, subirDocumento, quitarDocumento } from "./actions";
 
 type Documento = { tipo: string; estado: string; nombreArchivo: string | null; url: string | null };
 type Candidato = {
@@ -21,25 +21,87 @@ type Candidato = {
   documentos: Documento[];
 };
 
-export function CandidatosView({ candidatos }: { candidatos: Candidato[] }) {
-  const [showForm, setShowForm] = useState(false);
-  const [filtro, setFiltro] = useState<"Todos" | "DISPONIBLE" | "CONTRATADO">("Todos");
-  const [detalleId, setDetalleId] = useState<string | null>(null);
-  const [sectoresSel, setSectoresSel] = useState<string[]>([]);
+function CandidatoFormModal({
+  titulo,
+  candidato,
+  onGuardar,
+  onClose,
+}: {
+  titulo: string;
+  candidato?: Candidato;
+  onGuardar: (formData: FormData) => Promise<void>;
+  onClose: () => void;
+}) {
+  const [sectoresSel, setSectoresSel] = useState<string[]>(candidato?.sectores ?? []);
   const [pending, startTransition] = useTransition();
-  const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
-
-  const lista = filtro === "Todos" ? candidatos : candidatos.filter((c) => c.estado === filtro);
-  const detalle = candidatos.find((c) => c.id === detalleId) ?? null;
 
   function onSubmit(formData: FormData) {
     sectoresSel.forEach((s) => formData.append("sectores", s));
     startTransition(async () => {
-      await crearCandidato(formData);
-      setShowForm(false);
-      setSectoresSel([]);
+      await onGuardar(formData);
     });
   }
+
+  return (
+    <Modal title={titulo} onClose={onClose} wide>
+      <form action={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+        <Field label="Nombre completo"><Input name="nombre" defaultValue={candidato?.nombre} required /></Field>
+        <Field label="Edad"><Input name="edad" type="number" defaultValue={candidato?.edad ?? undefined} /></Field>
+        <Field label="Ciudad"><Input name="ciudad" placeholder="Ej: Tuxtla Gutiérrez" defaultValue={candidato?.ciudad ?? undefined} /></Field>
+        <Field label="Teléfono"><Input name="telefono" placeholder="9610000000" defaultValue={candidato?.telefono ?? undefined} /></Field>
+        <div className="md:col-span-2">
+          <Field label="Correo"><Input name="email" type="email" placeholder="nombre@gmail.com" defaultValue={candidato?.email ?? undefined} /></Field>
+        </div>
+        <Field label="Disponibilidad"><Input name="disponibilidad" placeholder="Inmediata / Mar 2026" defaultValue={candidato?.disponibilidad ?? undefined} /></Field>
+        <Field label="Salario esperado ($)"><Input name="salarioEsperado" type="number" placeholder="6500" defaultValue={candidato?.salarioEsperado ?? undefined} /></Field>
+        <div className="md:col-span-2">
+          <Field label="Experiencia"><Input name="experiencia" placeholder="Breve descripción" defaultValue={candidato?.experiencia ?? undefined} /></Field>
+        </div>
+        <div className="md:col-span-2">
+          <Field label="Sectores de interés">
+            <div className="flex flex-wrap gap-1.5 mt-1">
+              {Object.entries(SECTOR_LABEL).map(([k, v]) => {
+                const active = sectoresSel.includes(k);
+                return (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() =>
+                      setSectoresSel((prev) =>
+                        active ? prev.filter((s) => s !== k) : [...prev, k]
+                      )
+                    }
+                    className={`text-[11px] font-bold px-3 py-1.5 rounded-lg border ${
+                      active ? "bg-navy text-white border-navy" : "bg-white text-text border-border"
+                    }`}
+                  >
+                    {v}
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
+        </div>
+        <div className="md:col-span-2 flex gap-2.5 mt-1">
+          <Button type="submit" disabled={pending}>{pending ? "Guardando..." : "Guardar"}</Button>
+          <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+export function CandidatosView({ candidatos }: { candidatos: Candidato[] }) {
+  const [showForm, setShowForm] = useState(false);
+  const [filtro, setFiltro] = useState<"Todos" | "DISPONIBLE" | "CONTRATADO">("Todos");
+  const [detalleId, setDetalleId] = useState<string | null>(null);
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
+  const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  const lista = filtro === "Todos" ? candidatos : candidatos.filter((c) => c.estado === filtro);
+  const detalle = candidatos.find((c) => c.id === detalleId) ?? null;
+  const editando = candidatos.find((c) => c.id === editandoId) ?? null;
 
   function docInfo(c: Candidato, tipo: string): Documento {
     return c.documentos.find((d) => d.tipo === tipo) ?? { tipo, estado: "PENDIENTE", nombreArchivo: null, url: null };
@@ -120,51 +182,26 @@ export function CandidatosView({ candidatos }: { candidatos: Candidato[] }) {
       </div>
 
       {showForm && (
-        <Modal title="Registrar Candidato" onClose={() => setShowForm(false)} wide>
-          <form action={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-            <Field label="Nombre completo"><Input name="nombre" required /></Field>
-            <Field label="Edad"><Input name="edad" type="number" /></Field>
-            <Field label="Ciudad"><Input name="ciudad" placeholder="Ej: Tuxtla Gutiérrez" /></Field>
-            <Field label="Teléfono"><Input name="telefono" placeholder="9610000000" /></Field>
-            <div className="md:col-span-2">
-              <Field label="Correo"><Input name="email" type="email" placeholder="nombre@gmail.com" /></Field>
-            </div>
-            <Field label="Disponibilidad"><Input name="disponibilidad" placeholder="Inmediata / Mar 2026" /></Field>
-            <Field label="Salario esperado ($)"><Input name="salarioEsperado" type="number" placeholder="6500" /></Field>
-            <div className="md:col-span-2">
-              <Field label="Experiencia"><Input name="experiencia" placeholder="Breve descripción" /></Field>
-            </div>
-            <div className="md:col-span-2">
-              <Field label="Sectores de interés">
-                <div className="flex flex-wrap gap-1.5 mt-1">
-                  {Object.entries(SECTOR_LABEL).map(([k, v]) => {
-                    const active = sectoresSel.includes(k);
-                    return (
-                      <button
-                        key={k}
-                        type="button"
-                        onClick={() =>
-                          setSectoresSel((prev) =>
-                            active ? prev.filter((s) => s !== k) : [...prev, k]
-                          )
-                        }
-                        className={`text-[11px] font-bold px-3 py-1.5 rounded-lg border ${
-                          active ? "bg-navy text-white border-navy" : "bg-white text-text border-border"
-                        }`}
-                      >
-                        {v}
-                      </button>
-                    );
-                  })}
-                </div>
-              </Field>
-            </div>
-            <div className="md:col-span-2 flex gap-2.5 mt-1">
-              <Button type="submit" disabled={pending}>{pending ? "Guardando..." : "Guardar"}</Button>
-              <Button type="button" variant="ghost" onClick={() => setShowForm(false)}>Cancelar</Button>
-            </div>
-          </form>
-        </Modal>
+        <CandidatoFormModal
+          titulo="Registrar Candidato"
+          onGuardar={async (fd) => {
+            await crearCandidato(fd);
+            setShowForm(false);
+          }}
+          onClose={() => setShowForm(false)}
+        />
+      )}
+
+      {editando && (
+        <CandidatoFormModal
+          titulo={`Editar: ${editando.nombre}`}
+          candidato={editando}
+          onGuardar={async (fd) => {
+            await editarCandidato(editando.id, fd);
+            setEditandoId(null);
+          }}
+          onClose={() => setEditandoId(null)}
+        />
       )}
 
       {detalle && (
@@ -193,7 +230,17 @@ export function CandidatosView({ candidatos }: { candidatos: Candidato[] }) {
                   </div>
                 ) : null
               )}
-              <div className="mt-4 flex justify-end">
+              <div className="mt-4 flex justify-end gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setEditandoId(detalle.id);
+                    setDetalleId(null);
+                  }}
+                >
+                  ✏️ Editar
+                </Button>
                 <Button
                   variant="danger"
                   size="sm"

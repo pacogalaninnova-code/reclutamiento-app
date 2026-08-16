@@ -4,7 +4,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
-import { siguienteEtapa } from "@/lib/dominio";
+import { siguienteEtapa, MENSAJE_ETAPA } from "@/lib/dominio";
+import { enviarCorreo } from "@/lib/email";
 
 async function requireReclutador() {
   const session = await auth();
@@ -50,6 +51,35 @@ export async function crearVacante(formData: FormData) {
   revalidatePath("/reclutador/vacantes");
 }
 
+export async function editarVacante(id: string, formData: FormData) {
+  await requireReclutador();
+  const data = vacanteSchema.parse({
+    empresaId: formData.get("empresaId"),
+    puesto: formData.get("puesto"),
+    sector: formData.get("sector"),
+    ciudad: formData.get("ciudad"),
+    plazas: formData.get("plazas"),
+    salario: formData.get("salario"),
+    temporada: formData.get("temporada"),
+  });
+
+  await prisma.vacante.update({
+    where: { id },
+    data: {
+      empresaId: data.empresaId,
+      puesto: data.puesto,
+      sector: data.sector as never,
+      ciudad: data.ciudad,
+      plazas: data.plazas,
+      salario: data.salario,
+      temporada: data.temporada as never,
+    },
+  });
+
+  revalidatePath("/reclutador/vacantes");
+  revalidatePath("/empresa/vacantes");
+}
+
 async function actualizarEstadoVacante(vacanteId: string) {
   const vacante = await prisma.vacante.findUniqueOrThrow({
     where: { id: vacanteId },
@@ -76,6 +106,7 @@ export async function avanzarEtapa(vacanteId: string, candidatoId: string) {
   await requireReclutador();
   const aplicacion = await prisma.aplicacion.findUniqueOrThrow({
     where: { vacanteId_candidatoId: { vacanteId, candidatoId } },
+    include: { candidato: true, vacante: true },
   });
   const siguiente = siguienteEtapa(aplicacion.etapa);
   if (!siguiente) return;
@@ -93,6 +124,16 @@ export async function avanzarEtapa(vacanteId: string, candidatoId: string) {
   }
 
   await actualizarEstadoVacante(vacanteId);
+
+  const mensaje = MENSAJE_ETAPA[siguiente];
+  if (mensaje && aplicacion.candidato.email) {
+    await enviarCorreo({
+      to: aplicacion.candidato.email,
+      subject: `TalentTemp — Actualización de tu proceso: ${aplicacion.vacante.puesto}`,
+      text: mensaje(aplicacion.candidato.nombre, aplicacion.vacante.puesto),
+    });
+  }
+
   revalidatePath("/reclutador/vacantes");
   revalidatePath("/reclutador/reportes");
   revalidatePath("/reclutador/dashboard");
@@ -105,4 +146,25 @@ export async function setTermometro(vacanteId: string, candidatoId: string, valo
     data: { termometro: valor },
   });
   revalidatePath("/reclutador/vacantes");
+}
+
+export async function aprobarVacante(vacanteId: string) {
+  await requireReclutador();
+  await prisma.vacante.update({
+    where: { id: vacanteId },
+    data: { estado: "ACTIVA" },
+  });
+  revalidatePath("/reclutador/vacantes");
+  revalidatePath("/empresa/vacantes");
+  revalidatePath("/reclutador/dashboard");
+}
+
+export async function rechazarVacante(vacanteId: string) {
+  await requireReclutador();
+  await prisma.vacante.update({
+    where: { id: vacanteId },
+    data: { estado: "RECHAZADA" },
+  });
+  revalidatePath("/reclutador/vacantes");
+  revalidatePath("/empresa/vacantes");
 }

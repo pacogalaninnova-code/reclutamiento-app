@@ -44,6 +44,19 @@ export const TEMPORADA_INFO: Record<
   },
 };
 
+export const MENSAJE_ETAPA: Record<string, (nombre: string, puesto: string) => string> = {
+  ENTREVISTA: (nombre, puesto) =>
+    `Hola ${nombre}, fuiste seleccionado/a para una entrevista para el puesto de ${puesto}. Te contactamos pronto. – TalentTemp Chiapas`,
+  DOCUMENTOS: (nombre) =>
+    `Hola ${nombre}, el siguiente paso es reunir tus documentos: INE, comprobante de domicilio y más. – TalentTemp Chiapas`,
+  EVALUACION: (nombre) =>
+    `Hola ${nombre}, tus documentos están en orden. Estás en fase de evaluación. – TalentTemp Chiapas`,
+  FIRMA_CONTRATO: (nombre) =>
+    `Hola ${nombre}, procederemos con la firma de contrato. Contáctanos para coordinar. – TalentTemp Chiapas`,
+  CONTRATADO: (nombre, puesto) =>
+    `Hola ${nombre}, felicidades! Has sido contratado/a oficialmente para ${puesto}. Bienvenido/a al equipo. – TalentTemp Chiapas`,
+};
+
 export const ETAPAS: { key: string; label: string }[] = [
   { key: "APLICO", label: "Aplicó" },
   { key: "ENTREVISTA", label: "Entrevista" },
