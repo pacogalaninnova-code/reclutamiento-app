@@ -4,6 +4,21 @@ import { useRef, useState, useTransition } from "react";
 import { Card, Badge, Button, Modal, Field, Input } from "@/components/ui";
 import { SECTOR_LABEL, DOCUMENTOS, fmt, docPct } from "@/lib/dominio";
 import { crearCandidato, editarCandidato, eliminarCandidato, subirDocumento, quitarDocumento } from "./actions";
+import {
+  MapPin,
+  Cake,
+  Phone,
+  Mail,
+  Briefcase,
+  Clock,
+  Wallet,
+  Pencil,
+  Trash2,
+  FolderOpen,
+  Paperclip,
+  CheckCircle2,
+  type LucideIcon,
+} from "lucide-react";
 
 type Documento = { tipo: string; estado: string; nombreArchivo: string | null; url: string | null };
 type Candidato = {
@@ -20,6 +35,16 @@ type Candidato = {
   estado: string;
   documentos: Documento[];
 };
+
+const DETALLE_ROWS: { icon: LucideIcon; label: string; value: (c: Candidato) => string | null }[] = [
+  { icon: MapPin, label: "Ciudad", value: (c) => c.ciudad },
+  { icon: Cake, label: "Edad", value: (c) => (c.edad ? `${c.edad} años` : null) },
+  { icon: Phone, label: "Teléfono", value: (c) => c.telefono },
+  { icon: Mail, label: "Correo", value: (c) => c.email },
+  { icon: Briefcase, label: "Experiencia", value: (c) => c.experiencia },
+  { icon: Clock, label: "Disponibilidad", value: (c) => c.disponibilidad },
+  { icon: Wallet, label: "Salario esp.", value: (c) => (c.salarioEsperado ? fmt(c.salarioEsperado) + "/mes" : null) },
+];
 
 function CandidatoFormModal({
   titulo,
@@ -139,35 +164,40 @@ export function CandidatosView({ candidatos }: { candidatos: Candidato[] }) {
             <Card key={c.id} className="cursor-pointer" >
               <div onClick={() => setDetalleId(c.id)}>
                 <div className="flex justify-between items-start">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-navy to-coral flex items-center justify-center text-white font-extrabold text-lg">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-navy to-accent flex items-center justify-center text-white font-extrabold text-lg">
                     {c.nombre.charAt(0)}
                   </div>
                   <Badge estado={c.estado}>{c.estado}</Badge>
                 </div>
                 <div className="font-extrabold text-navy text-[15px] mt-2.5">{c.nombre}</div>
-                <div className="text-muted text-xs mt-0.5">
-                  {c.edad ? `${c.edad} años · ` : ""}📍 {c.ciudad ?? "-"}
+                <div className="flex items-center gap-1 text-muted text-xs mt-0.5">
+                  {c.edad ? `${c.edad} años · ` : ""}
+                  <MapPin size={11} />
+                  {c.ciudad ?? "-"}
                 </div>
                 {c.experiencia && (
                   <div className="text-text text-xs mt-1.5 leading-relaxed">{c.experiencia}</div>
                 )}
                 <div className="mt-2 flex flex-wrap gap-1">
                   {c.sectores.map((s) => (
-                    <span key={s} className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cream border border-border">
+                    <span key={s} className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-canvas border border-border">
                       {SECTOR_LABEL[s]}
                     </span>
                   ))}
                 </div>
                 <div className="mt-2.5 pt-2.5 border-t border-border">
                   <div className="flex justify-between mb-1">
-                    <span className="text-[11px] text-muted">📁 Documentos</span>
-                    <span className={`text-[11px] font-bold ${pct === 100 ? "text-green" : pct > 0 ? "text-gold" : "text-muted"}`}>
+                    <span className="flex items-center gap-1 text-[11px] text-muted">
+                      <FolderOpen size={12} />
+                      Documentos
+                    </span>
+                    <span className={`text-[11px] font-bold ${pct === 100 ? "text-green" : pct > 0 ? "text-highlight" : "text-muted"}`}>
                       {pct}%
                     </span>
                   </div>
                   <div className="bg-border rounded h-1">
                     <div
-                      className={`h-1 rounded ${pct === 100 ? "bg-green" : "bg-gold"}`}
+                      className={`h-1 rounded ${pct === 100 ? "bg-green" : "bg-highlight"}`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>
@@ -214,22 +244,19 @@ export function CandidatosView({ candidatos }: { candidatos: Candidato[] }) {
                   <Badge key={s}>{SECTOR_LABEL[s]}</Badge>
                 ))}
               </div>
-              {[
-                ["📍", "Ciudad", detalle.ciudad],
-                ["🎂", "Edad", detalle.edad ? `${detalle.edad} años` : null],
-                ["📞", "Teléfono", detalle.telefono],
-                ["✉️", "Correo", detalle.email],
-                ["💼", "Experiencia", detalle.experiencia],
-                ["🕐", "Disponibilidad", detalle.disponibilidad],
-                ["💰", "Salario esp.", detalle.salarioEsperado ? fmt(detalle.salarioEsperado) + "/mes" : null],
-              ].map(([icon, label, value]) =>
-                value ? (
-                  <div key={label} className="py-2 border-b border-border">
-                    <span className="text-muted text-[11px] mr-2">{icon} {label}</span>
-                    <span className="font-semibold text-[13px]">{value}</span>
+              {DETALLE_ROWS.map(({ icon: Icon, label, value }) => {
+                const v = value(detalle);
+                if (!v) return null;
+                return (
+                  <div key={label} className="flex items-center py-2 border-b border-border">
+                    <span className="flex items-center gap-1.5 text-muted text-[11px] mr-2 shrink-0">
+                      <Icon size={13} />
+                      {label}
+                    </span>
+                    <span className="font-semibold text-[13px]">{v}</span>
                   </div>
-                ) : null
-              )}
+                );
+              })}
               <div className="mt-4 flex justify-end gap-2">
                 <Button
                   variant="ghost"
@@ -239,7 +266,8 @@ export function CandidatosView({ candidatos }: { candidatos: Candidato[] }) {
                     setDetalleId(null);
                   }}
                 >
-                  ✏️ Editar
+                  <Pencil size={13} />
+                  Editar
                 </Button>
                 <Button
                   variant="danger"
@@ -251,23 +279,27 @@ export function CandidatosView({ candidatos }: { candidatos: Candidato[] }) {
                     });
                   }}
                 >
-                  🗑️ Eliminar candidato
+                  <Trash2 size={13} />
+                  Eliminar candidato
                 </Button>
               </div>
             </div>
 
             <div>
-              <div className="text-[11px] font-extrabold text-navy mb-3 tracking-wide">📁 DOCUMENTOS</div>
+              <div className="flex items-center gap-1.5 text-[11px] font-extrabold text-navy mb-3 tracking-wide">
+                <FolderOpen size={13} />
+                DOCUMENTOS
+              </div>
               <div className="mb-3">
                 <div className="flex justify-between mb-1">
                   <span className="text-xs text-muted">Completitud</span>
-                  <span className={`font-extrabold ${docPct(detalle.documentos) === 100 ? "text-green" : "text-gold"}`}>
+                  <span className={`font-extrabold ${docPct(detalle.documentos) === 100 ? "text-green" : "text-highlight"}`}>
                     {docPct(detalle.documentos)}%
                   </span>
                 </div>
                 <div className="bg-border rounded h-1.5">
                   <div
-                    className={`h-1.5 rounded ${docPct(detalle.documentos) === 100 ? "bg-green" : "bg-gold"}`}
+                    className={`h-1.5 rounded ${docPct(detalle.documentos) === 100 ? "bg-green" : "bg-highlight"}`}
                     style={{ width: `${docPct(detalle.documentos)}%` }}
                   />
                 </div>
@@ -276,17 +308,21 @@ export function CandidatosView({ candidatos }: { candidatos: Candidato[] }) {
                 const info = docInfo(detalle, doc.key);
                 const adjunto = info.estado === "ADJUNTO";
                 const refKey = `${detalle.id}-${doc.key}`;
+                const DocIcon = doc.icon;
                 return (
                   <div key={doc.key} className="flex items-center justify-between py-2 border-b border-border">
                     <div>
-                      <span className="text-[13px]">{doc.icon} </span>
-                      <span className={`text-xs font-semibold ${adjunto ? "text-green" : "text-text"}`}>
-                        {doc.label}
+                      <span className="inline-flex items-center gap-1.5">
+                        <DocIcon size={14} className="text-muted" />
+                        <span className={`text-xs font-semibold ${adjunto ? "text-green" : "text-text"}`}>
+                          {doc.label}
+                        </span>
                       </span>
                       {info.url && (
-                        <div className="text-[10px] text-muted mt-0.5">
+                        <div className="flex items-center gap-1 text-[10px] text-muted mt-0.5 ml-[22px]">
+                          <Paperclip size={10} />
                           <a href={info.url} target="_blank" rel="noreferrer" className="underline">
-                            📎 {info.nombreArchivo}
+                            {info.nombreArchivo}
                           </a>
                         </div>
                       )}
@@ -316,7 +352,8 @@ export function CandidatosView({ candidatos }: { candidatos: Candidato[] }) {
                           else startTransition(async () => quitarDocumento(detalle.id, doc.key));
                         }}
                       >
-                        {adjunto ? "✅ Adjunto" : "+ Adjuntar"}
+                        {adjunto ? <CheckCircle2 size={13} /> : null}
+                        {adjunto ? "Adjunto" : "+ Adjuntar"}
                       </Button>
                     </div>
                   </div>

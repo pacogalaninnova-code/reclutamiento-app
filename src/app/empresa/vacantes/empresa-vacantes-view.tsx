@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { Card, Badge, Button, Modal, Field, Input, Select, Termometro } from "@/components/ui";
-import { SECTOR_LABEL, TEMPORADA_INFO, ETAPA_LABEL, ETAPA_COLOR, fmt } from "@/lib/dominio";
+import { SECTOR_LABEL, TEMPORADA_INFO, TIPO_CONTRATO_LABEL, ETAPA_LABEL, ETAPA_COLOR, fmt } from "@/lib/dominio";
 import { solicitarVacante } from "./actions";
+import { MapPin } from "lucide-react";
 
 type Vacante = {
   id: string;
@@ -12,7 +13,8 @@ type Vacante = {
   ciudad: string;
   plazas: number;
   salario: number;
-  temporada: string;
+  tipoContrato: string;
+  temporada: string | null;
   estado: string;
   aplicaciones: {
     etapa: string;
@@ -23,12 +25,14 @@ type Vacante = {
 
 export function EmpresaVacantesView({ vacantes }: { vacantes: Vacante[] }) {
   const [showForm, setShowForm] = useState(false);
+  const [tipoContrato, setTipoContrato] = useState("PERMANENTE");
   const [pending, startTransition] = useTransition();
 
   function onSubmit(formData: FormData) {
     startTransition(async () => {
       await solicitarVacante(formData);
       setShowForm(false);
+      setTipoContrato("PERMANENTE");
     });
   }
 
@@ -44,18 +48,31 @@ export function EmpresaVacantesView({ vacantes }: { vacantes: Vacante[] }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
         {vacantes.map((v) => {
-          const t = TEMPORADA_INFO[v.temporada];
+          const t = v.temporada ? TEMPORADA_INFO[v.temporada] : null;
           return (
             <Card key={v.id}>
               <div className="flex justify-between items-center">
                 <Badge estado={v.estado}>{v.estado}</Badge>
-                <span className="text-lg">{t.icono}</span>
+                {t ? (
+                  <span
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
+                    style={{ color: t.color, background: t.bg }}
+                  >
+                    <t.icono size={10} />
+                    {t.label}
+                  </span>
+                ) : (
+                  <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold text-blue bg-[#E9EFF4]">
+                    {TIPO_CONTRATO_LABEL[v.tipoContrato]}
+                  </span>
+                )}
               </div>
               <div className="font-extrabold text-navy text-[15px] mt-2.5">{v.puesto}</div>
-              <div className="text-muted text-xs mt-0.5">
-                📍 {v.ciudad} · {v.plazas} plaza(s) · {SECTOR_LABEL[v.sector]}
+              <div className="flex items-center gap-1 text-muted text-xs mt-0.5">
+                <MapPin size={11} />
+                {v.ciudad} · {v.plazas} plaza(s) · {SECTOR_LABEL[v.sector]}
               </div>
-              <div className="font-bold text-coral text-sm mt-1.5">
+              <div className="font-bold text-accent text-sm mt-1.5">
                 {fmt(v.salario)}<span className="text-muted font-normal">/mes</span>
               </div>
 
@@ -93,7 +110,7 @@ export function EmpresaVacantesView({ vacantes }: { vacantes: Vacante[] }) {
       {showForm && (
         <Modal title="Solicitar Nueva Vacante" onClose={() => setShowForm(false)}>
           <form action={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-            <Field label="Puesto"><Input name="puesto" placeholder="Ej: Promotor de Ventas" required /></Field>
+            <Field label="Puesto"><Input name="puesto" placeholder="Ej: Analista de Ventas" required /></Field>
             <Field label="Sector">
               <Select name="sector" required defaultValue="">
                 <option value="" disabled>Seleccionar...</option>
@@ -102,14 +119,28 @@ export function EmpresaVacantesView({ vacantes }: { vacantes: Vacante[] }) {
                 ))}
               </Select>
             </Field>
-            <Field label="Temporada">
-              <Select name="temporada" required defaultValue="">
-                <option value="" disabled>Seleccionar...</option>
-                {Object.entries(TEMPORADA_INFO).map(([k, v]) => (
-                  <option key={k} value={k}>{v.label}</option>
+            <Field label="Tipo de contrato">
+              <Select
+                name="tipoContrato"
+                required
+                value={tipoContrato}
+                onChange={(e) => setTipoContrato(e.target.value)}
+              >
+                {Object.entries(TIPO_CONTRATO_LABEL).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
                 ))}
               </Select>
             </Field>
+            {tipoContrato === "TEMPORAL" && (
+              <Field label="Temporada">
+                <Select name="temporada" required defaultValue="">
+                  <option value="" disabled>Seleccionar...</option>
+                  {Object.entries(TEMPORADA_INFO).map(([k, v]) => (
+                    <option key={k} value={k}>{v.label}</option>
+                  ))}
+                </Select>
+              </Field>
+            )}
             <Field label="Ciudad"><Input name="ciudad" required /></Field>
             <Field label="No. Plazas"><Input name="plazas" type="number" min={1} required /></Field>
             <Field label="Salario mensual ($)"><Input name="salario" type="number" required /></Field>

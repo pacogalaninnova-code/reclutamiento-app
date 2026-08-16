@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Card, Field, Input, Button } from "@/components/ui";
 import { SECTOR_LABEL } from "@/lib/dominio";
 import { editarMiPerfil } from "../actions";
+import { User, CheckCircle2 } from "lucide-react";
 
 type Candidato = {
   nombre: string;
@@ -33,8 +34,9 @@ export function CandidatoPerfilForm({ candidato }: { candidato: Candidato }) {
 
   return (
     <Card className="mb-5">
-      <div className="text-[11px] font-extrabold text-navy mb-3.5 tracking-wide">
-        👤 MI PERFIL
+      <div className="flex items-center gap-1.5 text-[11px] font-extrabold text-navy mb-3.5 tracking-wide">
+        <User size={13} />
+        MI PERFIL
       </div>
       <form action={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
         <Field label="Nombre completo"><Input name="nombre" defaultValue={candidato.nombre} required /></Field>
@@ -75,8 +77,9 @@ export function CandidatoPerfilForm({ candidato }: { candidato: Candidato }) {
           </Field>
         </div>
         {guardado && (
-          <div className="md:col-span-2 text-xs font-semibold text-green bg-green/10 rounded-lg px-3 py-2.5">
-            ✅ Perfil actualizado correctamente.
+          <div className="md:col-span-2 flex items-center gap-1.5 text-xs font-semibold text-green bg-green/10 rounded-lg px-3 py-2.5">
+            <CheckCircle2 size={14} />
+            Perfil actualizado correctamente.
           </div>
         )}
         <div className="md:col-span-2">

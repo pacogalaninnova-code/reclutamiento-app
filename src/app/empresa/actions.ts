@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
+import { registrarActividad } from "@/lib/actividad";
 
 const empresaSchema = z.object({
   nombre: z.string().min(1),
@@ -41,6 +42,15 @@ export async function editarMiEmpresa(formData: FormData) {
     },
   });
 
+  await registrarActividad({
+    tipo: "PERFIL_EMPRESA_ACTUALIZADO",
+    descripcion: `${data.nombre} actualizó los datos de su empresa.`,
+    actorRol: "EMPRESA",
+    actorNombre: data.nombre,
+    empresaId: session.user.empresaId,
+  });
+
   revalidatePath("/empresa/cuenta");
   revalidatePath("/reclutador/empresas");
+  revalidatePath("/reclutador/actividad");
 }

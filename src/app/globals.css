@@ -1,21 +1,22 @@
 @import "tailwindcss";
 
+/* Corporate Navy — professional palette: charcoal navy, steel blue, teal accent */
 :root {
-  --background: #f7f4f0;
-  --foreground: #1c2b3a;
+  --background: #f4f6f8;
+  --foreground: #1e293b;
 
-  --color-navy: #0f2a4a;
-  --color-navy-dark: #1a3d6b;
-  --color-coral: #ff6b35;
-  --color-gold: #f5a623;
-  --color-green: #2d9e6b;
-  --color-red: #c0392b;
-  --color-purple: #8e44ad;
-  --color-blue: #2980b9;
-  --color-cream: #f7f4f0;
-  --color-muted: #8892a4;
-  --color-text: #1c2b3a;
-  --color-border: #e2ddd8;
+  --color-navy: #1b2838;
+  --color-navy-dark: #0f1922;
+  --color-accent: #0f766e;
+  --color-highlight: #b45309;
+  --color-green: #15803d;
+  --color-red: #b91c1c;
+  --color-violet: #4c4a8c;
+  --color-blue: #3b5b7a;
+  --color-canvas: #f4f6f8;
+  --color-muted: #64748b;
+  --color-text: #1e293b;
+  --color-border: #e2e8f0;
 }
 
 @theme inline {
@@ -25,13 +26,13 @@
 
   --color-navy: var(--color-navy);
   --color-navy-dark: var(--color-navy-dark);
-  --color-coral: var(--color-coral);
-  --color-gold: var(--color-gold);
+  --color-accent: var(--color-accent);
+  --color-highlight: var(--color-highlight);
   --color-green: var(--color-green);
   --color-red: var(--color-red);
-  --color-purple: var(--color-purple);
+  --color-violet: var(--color-violet);
   --color-blue: var(--color-blue);
-  --color-cream: var(--color-cream);
+  --color-canvas: var(--color-canvas);
   --color-muted: var(--color-muted);
   --color-text: var(--color-text);
   --color-border: var(--color-border);

@@ -18,15 +18,29 @@ enum Rol {
 }
 
 enum Sector {
-  CERVECERIAS
+  TECNOLOGIA
+  MANUFACTURA
+  SALUD
+  EDUCACION
+  SERVICIOS_PROFESIONALES
+  CONSTRUCCION
+  FINANZAS
+  ADMINISTRACION
+  VENTAS
+  RECURSOS_HUMANOS
+  LEGAL
+  MARKETING
+  LOGISTICA
+  AGROINDUSTRIA
   RETAIL
   RESTAURANTES
   HOTELES
   TURISMO
   EVENTOS
-  LOGISTICA
+  CERVECERIAS
   CATERING
   BALNEARIOS
+  OTRO
 }
 
 enum Temporada {
@@ -34,6 +48,11 @@ enum Temporada {
   VERANO
   FIESTAS_PATRIAS
   FIN_DE_ANO
+}
+
+enum TipoContrato {
+  PERMANENTE
+  TEMPORAL
 }
 
 enum EstadoVacante {
@@ -102,23 +121,25 @@ model Empresa {
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
 
-  usuario  Usuario?
-  vacantes Vacante[]
+  usuario     Usuario?
+  vacantes    Vacante[]
+  actividades Actividad[]
 }
 
 model Vacante {
-  id        String        @id @default(cuid())
-  empresaId String
-  empresa   Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade)
-  puesto    String
-  sector    Sector
-  ciudad    String
-  plazas    Int
-  salario   Int
-  temporada Temporada
-  estado    EstadoVacante @default(ACTIVA)
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  id           String        @id @default(cuid())
+  empresaId    String
+  empresa      Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  puesto       String
+  sector       Sector
+  ciudad       String
+  plazas       Int
+  salario      Int
+  tipoContrato TipoContrato  @default(PERMANENTE)
+  temporada    Temporada?
+  estado       EstadoVacante @default(ACTIVA)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
   aplicaciones Aplicacion[]
 }
@@ -141,6 +162,7 @@ model Candidato {
   usuario      Usuario?
   documentos   Documento[]
   aplicaciones Aplicacion[]
+  actividades  Actividad[]
 }
 
 model Aplicacion {
@@ -170,4 +192,29 @@ model Documento {
   updatedAt     DateTime        @updatedAt
 
   @@unique([candidatoId, tipo])
+}
+
+enum TipoActividad {
+  VACANTE_SOLICITADA
+  PERFIL_EMPRESA_ACTUALIZADO
+  PERFIL_CANDIDATO_ACTUALIZADO
+  DOCUMENTO_SUBIDO
+  DOCUMENTO_ELIMINADO
+  PASSWORD_CAMBIADO
+}
+
+model Actividad {
+  id          String         @id @default(cuid())
+  tipo        TipoActividad
+  descripcion String
+  actorRol    Rol
+  actorNombre String
+  createdAt   DateTime       @default(now())
+
+  empresaId   String?
+  empresa     Empresa?   @relation(fields: [empresaId], references: [id], onDelete: SetNull)
+  candidatoId String?
+  candidato   Candidato? @relation(fields: [candidatoId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
 }

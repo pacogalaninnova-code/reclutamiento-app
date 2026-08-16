@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { Header } from "@/components/header";
 
-const NAV = [{ href: "/empresa/vacantes", icon: "📋", label: "Mis Vacantes" }];
+const NAV = [{ href: "/empresa/vacantes", icon: "vacantes", label: "Mis Vacantes" }];
 
 export default async function EmpresaLayout({ children }: { children: ReactNode }) {
   const session = await auth();
@@ -12,7 +12,7 @@ export default async function EmpresaLayout({ children }: { children: ReactNode 
   }
 
   return (
-    <div className="min-h-screen bg-cream">
+    <div className="min-h-screen bg-canvas">
       <Header nav={NAV} nombre={session.user.name ?? ""} badge="Portal Empresa" cuentaHref="/empresa/cuenta" />
       <main className="max-w-[1200px] mx-auto">{children}</main>
     </div>

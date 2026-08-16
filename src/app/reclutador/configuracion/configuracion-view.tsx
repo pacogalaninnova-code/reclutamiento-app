@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Card, Button, Field, Input, Select } from "@/components/ui";
 import { crearUsuario, eliminarUsuario, eliminarRegistro } from "./actions";
+import { Settings, User, Building2, Briefcase, Users, Trash2, type LucideIcon } from "lucide-react";
 
 type Item = { id: string; nombre: string; sub: string };
 
@@ -24,11 +25,11 @@ export function ConfiguracionView({
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const TABS: { key: typeof tab; icon: string; label: string; items: Item[] }[] = [
-    { key: "usuarios", icon: "👤", label: "Usuarios", items: usuarios },
-    { key: "empresas", icon: "🏢", label: "Empresas", items: empresas },
-    { key: "vacantes", icon: "📋", label: "Vacantes", items: vacantes },
-    { key: "candidatos", icon: "👥", label: "Candidatos", items: candidatos },
+  const TABS: { key: typeof tab; icon: LucideIcon; label: string; items: Item[] }[] = [
+    { key: "usuarios", icon: User, label: "Usuarios", items: usuarios },
+    { key: "empresas", icon: Building2, label: "Empresas", items: empresas },
+    { key: "vacantes", icon: Briefcase, label: "Vacantes", items: vacantes },
+    { key: "candidatos", icon: Users, label: "Candidatos", items: candidatos },
   ];
   const actual = TABS.find((t) => t.key === tab)!;
 
@@ -49,20 +50,27 @@ export function ConfiguracionView({
 
   return (
     <div className="p-6">
-      <h2 className="text-xl font-extrabold text-navy mb-5">⚙️ Configuración</h2>
+      <h2 className="flex items-center gap-2 text-xl font-extrabold text-navy mb-5">
+        <Settings size={20} />
+        Configuración
+      </h2>
       <div className="flex gap-2 mb-5 flex-wrap">
-        {TABS.map((t) => (
-          <Button
-            key={t.key}
-            variant={tab === t.key ? "secondary" : "ghost"}
-            onClick={() => {
-              setTab(t.key);
-              setShowNew(false);
-            }}
-          >
-            {t.icon} {t.label}
-          </Button>
-        ))}
+        {TABS.map((t) => {
+          const Icon = t.icon;
+          return (
+            <Button
+              key={t.key}
+              variant={tab === t.key ? "secondary" : "ghost"}
+              onClick={() => {
+                setTab(t.key);
+                setShowNew(false);
+              }}
+            >
+              <Icon size={14} />
+              {t.label}
+            </Button>
+          );
+        })}
       </div>
 
       <Card>
@@ -76,8 +84,8 @@ export function ConfiguracionView({
         </div>
 
         {showNew && tab === "usuarios" && (
-          <div className="bg-cream rounded-xl p-4 mb-4">
-            <div className="text-[11px] font-extrabold text-coral mb-3">NUEVO USUARIO</div>
+          <div className="bg-canvas rounded-xl p-4 mb-4">
+            <div className="text-[11px] font-extrabold text-accent mb-3">NUEVO USUARIO</div>
             <form action={onSubmitUsuario} className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Field label="Nombre"><Input name="nombre" required /></Field>
               <Field label="Rol">
@@ -110,7 +118,10 @@ export function ConfiguracionView({
               </div>
             ) : (
               (tab !== "usuarios" || esAdmin) && (
-                <Button size="sm" variant="danger" onClick={() => setConfirmId(item.id)}>🗑️ Eliminar</Button>
+                <Button size="sm" variant="danger" onClick={() => setConfirmId(item.id)}>
+                  <Trash2 size={13} />
+                  Eliminar
+                </Button>
               )
             )}
           </div>

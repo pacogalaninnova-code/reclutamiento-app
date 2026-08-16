@@ -4,6 +4,7 @@ import { useRef, useTransition } from "react";
 import { Card, Badge, Button } from "@/components/ui";
 import { DOCUMENTOS, ETAPA_LABEL, ETAPA_COLOR, docPct, fmt } from "@/lib/dominio";
 import { subirMiDocumento, quitarMiDocumento } from "./actions";
+import { ClipboardList, FolderOpen, Paperclip, CheckCircle2 } from "lucide-react";
 
 type Documento = { tipo: string; estado: string; nombreArchivo: string | null; url: string | null };
 type Aplicacion = {
@@ -47,8 +48,9 @@ export function CandidatoView({ candidato }: { candidato: Candidato }) {
       </div>
 
       <Card className="mb-5">
-        <div className="text-[11px] font-extrabold text-navy mb-3.5 tracking-wide">
-          📋 MIS PROCESOS
+        <div className="flex items-center gap-1.5 text-[11px] font-extrabold text-navy mb-3.5 tracking-wide">
+          <ClipboardList size={13} />
+          MIS PROCESOS
         </div>
         {candidato.aplicaciones.length === 0 && (
           <div className="text-muted text-sm text-center py-4">
@@ -66,23 +68,24 @@ export function CandidatoView({ candidato }: { candidato: Candidato }) {
                 {ETAPA_LABEL[a.etapa]}
               </span>
             </div>
-            <div className="text-coral font-bold text-sm mt-1">{fmt(a.vacante.salario)}/mes</div>
+            <div className="text-accent font-bold text-sm mt-1">{fmt(a.vacante.salario)}/mes</div>
           </div>
         ))}
       </Card>
 
       <Card>
-        <div className="text-[11px] font-extrabold text-navy mb-3 tracking-wide">
-          📁 MIS DOCUMENTOS
+        <div className="flex items-center gap-1.5 text-[11px] font-extrabold text-navy mb-3 tracking-wide">
+          <FolderOpen size={13} />
+          MIS DOCUMENTOS
         </div>
         <div className="mb-3">
           <div className="flex justify-between mb-1">
             <span className="text-xs text-muted">Completitud</span>
-            <span className={`font-extrabold ${pct === 100 ? "text-green" : "text-gold"}`}>{pct}%</span>
+            <span className={`font-extrabold ${pct === 100 ? "text-green" : "text-highlight"}`}>{pct}%</span>
           </div>
           <div className="bg-border rounded h-1.5">
             <div
-              className={`h-1.5 rounded ${pct === 100 ? "bg-green" : "bg-gold"}`}
+              className={`h-1.5 rounded ${pct === 100 ? "bg-green" : "bg-highlight"}`}
               style={{ width: `${pct}%` }}
             />
           </div>
@@ -90,15 +93,21 @@ export function CandidatoView({ candidato }: { candidato: Candidato }) {
         {DOCUMENTOS.map((doc) => {
           const info = docInfo(doc.key);
           const adjunto = info.estado === "ADJUNTO";
+          const DocIcon = doc.icon;
           return (
             <div key={doc.key} className="flex items-center justify-between py-2.5 border-b border-border last:border-0">
               <div>
-                <span className="text-[13px]">{doc.icon} </span>
-                <span className={`text-xs font-semibold ${adjunto ? "text-green" : "text-text"}`}>
-                  {doc.label}
+                <span className="inline-flex items-center gap-1.5">
+                  <DocIcon size={14} className="text-muted" />
+                  <span className={`text-xs font-semibold ${adjunto ? "text-green" : "text-text"}`}>
+                    {doc.label}
+                  </span>
                 </span>
                 {info.nombreArchivo && (
-                  <div className="text-[10px] text-muted mt-0.5">📎 {info.nombreArchivo}</div>
+                  <div className="flex items-center gap-1 text-[10px] text-muted mt-0.5 ml-[22px]">
+                    <Paperclip size={10} />
+                    {info.nombreArchivo}
+                  </div>
                 )}
               </div>
               <div className="flex gap-1.5 items-center">
@@ -124,7 +133,8 @@ export function CandidatoView({ candidato }: { candidato: Candidato }) {
                     else startTransition(async () => quitarMiDocumento(doc.key));
                   }}
                 >
-                  {adjunto ? "✅ Adjunto" : "+ Subir"}
+                  {adjunto ? <CheckCircle2 size={13} /> : null}
+                  {adjunto ? "Adjunto" : "+ Subir"}
                 </Button>
               </div>
             </div>

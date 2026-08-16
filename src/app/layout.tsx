@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
+import { APP_NAME, APP_TAGLINE } from "@/lib/marca";
 
 export const metadata: Metadata = {
-  title: "TalentTemp — Reclutamiento de Temporada",
-  description: "Plataforma de reclutamiento y selección de personal por temporada",
+  title: `${APP_NAME} — ${APP_TAGLINE}`,
+  description: APP_TAGLINE,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -18,7 +19,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-full flex flex-col bg-cream text-text">
+      <body className="min-h-full flex flex-col bg-canvas text-text">
         <Providers>{children}</Providers>
       </body>
     </html>

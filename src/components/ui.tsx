@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { X, type LucideIcon } from "lucide-react";
 
 export function Card({
   children,
@@ -9,7 +10,7 @@ export function Card({
 }) {
   return (
     <div
-      className={`bg-white rounded-2xl border border-border shadow-[0_2px_12px_rgba(15,42,74,0.07)] p-5 ${className}`}
+      className={`bg-white rounded-2xl border border-border shadow-[0_2px_12px_rgba(27,40,56,0.06)] p-5 ${className}`}
     >
       {children}
     </div>
@@ -17,14 +18,14 @@ export function Card({
 }
 
 const ESTADO_COLORS: Record<string, string> = {
-  DISPONIBLE: "text-green bg-[#edfaf4]",
-  CONTRATADO: "text-muted bg-[#f0f0f0]",
-  ACTIVA: "text-green bg-[#edfaf4]",
-  CUBIERTA: "text-muted bg-[#f0f0f0]",
-  CERRADA: "text-muted bg-[#f0f0f0]",
-  INACTIVO: "text-muted bg-[#f0f0f0]",
-  PENDIENTE: "text-gold bg-[#fff8e7]",
-  RECHAZADA: "text-red bg-[#fff0ef]",
+  DISPONIBLE: "text-green bg-[#eaf3ed]",
+  CONTRATADO: "text-muted bg-[#f1f5f9]",
+  ACTIVA: "text-green bg-[#eaf3ed]",
+  CUBIERTA: "text-muted bg-[#f1f5f9]",
+  CERRADA: "text-muted bg-[#f1f5f9]",
+  INACTIVO: "text-muted bg-[#f1f5f9]",
+  PENDIENTE: "text-highlight bg-[#fbf0e4]",
+  RECHAZADA: "text-red bg-[#fbeaea]",
 };
 
 export function Badge({
@@ -36,7 +37,7 @@ export function Badge({
   colorClass?: string;
   estado?: string;
 }) {
-  const cls = colorClass ?? (estado ? ESTADO_COLORS[estado] : "text-muted bg-[#f0f0f0]");
+  const cls = colorClass ?? (estado ? ESTADO_COLORS[estado] : "text-muted bg-[#f1f5f9]");
   return (
     <span
       className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-bold ${cls}`}
@@ -61,9 +62,9 @@ export function Button({
     "inline-flex items-center justify-center gap-1.5 rounded-lg font-bold whitespace-nowrap transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
   const sizes = size === "sm" ? "px-3 py-1.5 text-[11px]" : "px-4 py-2.5 text-sm";
   const variants: Record<string, string> = {
-    primary: "bg-coral text-white hover:bg-[#e85a2a]",
+    primary: "bg-accent text-white hover:bg-[#0c5d56]",
     secondary: "bg-navy text-white hover:bg-navy-dark",
-    ghost: "bg-transparent border border-border text-text hover:bg-[#f1f1f1]",
+    ghost: "bg-transparent border border-border text-text hover:bg-[#f1f5f9]",
     danger: "bg-red/10 text-red hover:bg-red/20",
   };
   return (
@@ -79,17 +80,17 @@ export function Button({
 export function StatTile({
   label,
   value,
-  icon,
+  icon: Icon,
   colorClass = "text-navy",
 }: {
   label: string;
   value: string | number;
-  icon: string;
+  icon: LucideIcon;
   colorClass?: string;
 }) {
   return (
     <Card className="flex flex-col gap-1.5">
-      <div className="text-2xl">{icon}</div>
+      <Icon size={22} strokeWidth={1.75} className={colorClass} />
       <div className={`text-2xl font-extrabold ${colorClass}`}>{value}</div>
       <div className="text-[11px] text-muted font-semibold">{label}</div>
     </Card>
@@ -106,7 +107,7 @@ export function Termometro({
   readonly?: boolean;
 }) {
   const color = (v: number) =>
-    v <= 3 ? "#e74c3c" : v <= 6 ? "#f39c12" : "#27ae60";
+    v <= 3 ? "#b91c1c" : v <= 6 ? "#b45309" : "#15803d";
   const label =
     value <= 3
       ? "Probabilidad baja"
@@ -125,7 +126,7 @@ export function Termometro({
             onClick={() => onChange?.(n)}
             className="w-[19px] h-[19px] rounded"
             style={{
-              background: n <= value ? color(n) : "#e2ddd8",
+              background: n <= value ? color(n) : "#e2e8f0",
               border: n === value ? `2px solid ${color(value)}` : "2px solid transparent",
               cursor: readonly ? "default" : "pointer",
             }}
@@ -147,7 +148,7 @@ export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className={`w-full px-3 py-2.5 rounded-lg border-[1.5px] border-border bg-cream text-sm text-text outline-none focus:border-coral ${props.className ?? ""}`}
+      className={`w-full px-3 py-2.5 rounded-lg border-[1.5px] border-border bg-canvas text-sm text-text outline-none focus:border-accent ${props.className ?? ""}`}
     />
   );
 }
@@ -156,7 +157,7 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
       {...props}
-      className={`w-full px-3 py-2.5 rounded-lg border-[1.5px] border-border bg-cream text-sm text-text outline-none focus:border-coral ${props.className ?? ""}`}
+      className={`w-full px-3 py-2.5 rounded-lg border-[1.5px] border-border bg-canvas text-sm text-text outline-none focus:border-accent ${props.className ?? ""}`}
     />
   );
 }
@@ -207,7 +208,8 @@ export function Modal({
         <div className="flex justify-between items-center mb-4.5">
           <span className="font-extrabold text-navy text-base">{title}</span>
           <Button variant="ghost" size="sm" onClick={onClose}>
-            ✕ Cerrar
+            <X size={13} />
+            Cerrar
           </Button>
         </div>
         {children}

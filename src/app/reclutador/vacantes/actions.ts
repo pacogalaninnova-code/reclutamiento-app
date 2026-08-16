@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { siguienteEtapa, MENSAJE_ETAPA } from "@/lib/dominio";
 import { enviarCorreo } from "@/lib/email";
+import { APP_NAME } from "@/lib/marca";
 
 async function requireReclutador() {
   const session = await auth();
@@ -21,7 +22,8 @@ const vacanteSchema = z.object({
   ciudad: z.string().min(1),
   plazas: z.coerce.number().int().positive(),
   salario: z.coerce.number().int().positive(),
-  temporada: z.string().min(1),
+  tipoContrato: z.enum(["PERMANENTE", "TEMPORAL"]),
+  temporada: z.string().optional(),
 });
 
 export async function crearVacante(formData: FormData) {
@@ -33,7 +35,8 @@ export async function crearVacante(formData: FormData) {
     ciudad: formData.get("ciudad"),
     plazas: formData.get("plazas"),
     salario: formData.get("salario"),
-    temporada: formData.get("temporada"),
+    tipoContrato: formData.get("tipoContrato"),
+    temporada: formData.get("temporada") || undefined,
   });
 
   await prisma.vacante.create({
@@ -44,7 +47,8 @@ export async function crearVacante(formData: FormData) {
       ciudad: data.ciudad,
       plazas: data.plazas,
       salario: data.salario,
-      temporada: data.temporada as never,
+      tipoContrato: data.tipoContrato,
+      temporada: data.tipoContrato === "TEMPORAL" ? (data.temporada as never) : null,
     },
   });
 
@@ -60,7 +64,8 @@ export async function editarVacante(id: string, formData: FormData) {
     ciudad: formData.get("ciudad"),
     plazas: formData.get("plazas"),
     salario: formData.get("salario"),
-    temporada: formData.get("temporada"),
+    tipoContrato: formData.get("tipoContrato"),
+    temporada: formData.get("temporada") || undefined,
   });
 
   await prisma.vacante.update({
@@ -72,7 +77,8 @@ export async function editarVacante(id: string, formData: FormData) {
       ciudad: data.ciudad,
       plazas: data.plazas,
       salario: data.salario,
-      temporada: data.temporada as never,
+      tipoContrato: data.tipoContrato,
+      temporada: data.tipoContrato === "TEMPORAL" ? (data.temporada as never) : null,
     },
   });
 
@@ -129,7 +135,7 @@ export async function avanzarEtapa(vacanteId: string, candidatoId: string) {
   if (mensaje && aplicacion.candidato.email) {
     await enviarCorreo({
       to: aplicacion.candidato.email,
-      subject: `TalentTemp — Actualización de tu proceso: ${aplicacion.vacante.puesto}`,
+      subject: `${APP_NAME} — Actualización de tu proceso: ${aplicacion.vacante.puesto}`,
       text: mensaje(aplicacion.candidato.nombre, aplicacion.vacante.puesto),
     });
   }

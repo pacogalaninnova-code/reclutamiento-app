@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
+import { AlertCircle } from "lucide-react";
 import { Input, Label, Button } from "@/components/ui";
+import { APP_NAME } from "@/lib/marca";
 
 export function LoginForm() {
   const router = useRouter();
@@ -61,15 +63,16 @@ export function LoginForm() {
         />
       </div>
       {error && (
-        <div className="bg-[#FFF0EF] border border-red/30 rounded-lg px-3 py-2.5 text-xs text-red mb-3.5 font-semibold">
-          ⚠️ Correo o contraseña incorrectos
+        <div className="flex items-center gap-1.5 bg-[#FBEAEA] border border-red/30 rounded-lg px-3 py-2.5 text-xs text-red mb-3.5 font-semibold">
+          <AlertCircle size={14} />
+          Correo o contraseña incorrectos
         </div>
       )}
       <Button type="submit" disabled={loading} className="w-full !py-3 !text-sm">
         {loading ? "Ingresando..." : "Iniciar Sesión"}
       </Button>
       <div className="text-center mt-4 text-[11px] text-muted">
-        Credenciales asignadas por el equipo de TalentTemp
+        Credenciales asignadas por el equipo de {APP_NAME}
       </div>
     </form>
   );

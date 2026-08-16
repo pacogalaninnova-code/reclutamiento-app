@@ -2,7 +2,17 @@
 
 import { useState, useTransition } from "react";
 import { Card, Badge, Button, Modal, Field, Input, Select, Termometro } from "@/components/ui";
-import { SECTOR_LABEL, TEMPORADA_INFO, ETAPA_LABEL, ETAPA_COLOR, fmt, comision, siguienteEtapa } from "@/lib/dominio";
+import {
+  SECTOR_LABEL,
+  TEMPORADA_INFO,
+  TIPO_CONTRATO_LABEL,
+  ETAPA_LABEL,
+  ETAPA_COLOR,
+  fmt,
+  comision,
+  siguienteEtapa,
+} from "@/lib/dominio";
+import { APP_NAME } from "@/lib/marca";
 import {
   crearVacante,
   editarVacante,
@@ -12,6 +22,7 @@ import {
   aprobarVacante,
   rechazarVacante,
 } from "./actions";
+import { Pencil, MapPin, Building2, CheckCircle2, XCircle, Workflow, Wallet, MessageCircle } from "lucide-react";
 
 type Empresa = { id: string; nombre: string };
 type Aplicacion = {
@@ -28,7 +39,8 @@ type Vacante = {
   empresaId: string;
   plazas: number;
   salario: number;
-  temporada: string;
+  tipoContrato: string;
+  temporada: string | null;
   estado: string;
   empresa: Empresa;
   aplicaciones: Aplicacion[];
@@ -49,6 +61,7 @@ function VacanteFormModal({
   onClose: () => void;
 }) {
   const [pending, startTransition] = useTransition();
+  const [tipoContrato, setTipoContrato] = useState(vacante?.tipoContrato ?? "PERMANENTE");
 
   function onSubmit(formData: FormData) {
     startTransition(async () => {
@@ -67,7 +80,7 @@ function VacanteFormModal({
             ))}
           </Select>
         </Field>
-        <Field label="Puesto"><Input name="puesto" placeholder="Ej: Promotor de Ventas" defaultValue={vacante?.puesto} required /></Field>
+        <Field label="Puesto"><Input name="puesto" placeholder="Ej: Analista de Ventas" defaultValue={vacante?.puesto} required /></Field>
         <Field label="Sector">
           <Select name="sector" required defaultValue={vacante?.sector ?? ""}>
             <option value="" disabled>Seleccionar...</option>
@@ -76,14 +89,28 @@ function VacanteFormModal({
             ))}
           </Select>
         </Field>
-        <Field label="Temporada">
-          <Select name="temporada" required defaultValue={vacante?.temporada ?? ""}>
-            <option value="" disabled>Seleccionar...</option>
-            {Object.entries(TEMPORADA_INFO).map(([k, v]) => (
-              <option key={k} value={k}>{v.label}</option>
+        <Field label="Tipo de contrato">
+          <Select
+            name="tipoContrato"
+            required
+            value={tipoContrato}
+            onChange={(e) => setTipoContrato(e.target.value)}
+          >
+            {Object.entries(TIPO_CONTRATO_LABEL).map(([k, v]) => (
+              <option key={k} value={k}>{v}</option>
             ))}
           </Select>
         </Field>
+        {tipoContrato === "TEMPORAL" && (
+          <Field label="Temporada">
+            <Select name="temporada" required defaultValue={vacante?.temporada ?? ""}>
+              <option value="" disabled>Seleccionar...</option>
+              {Object.entries(TEMPORADA_INFO).map(([k, v]) => (
+                <option key={k} value={k}>{v.label}</option>
+              ))}
+            </Select>
+          </Field>
+        )}
         <Field label="Ciudad"><Input name="ciudad" placeholder="Ej: Tuxtla Gutiérrez" defaultValue={vacante?.ciudad} required /></Field>
         <Field label="No. Plazas"><Input name="plazas" type="number" min={1} defaultValue={vacante?.plazas} required /></Field>
         <div className="md:col-span-2">
@@ -127,7 +154,7 @@ export function VacantesView({
     <div className="p-6">
       <div className="flex justify-between items-center mb-5">
         <div>
-          <h2 className="text-xl font-extrabold text-navy">Vacantes de Temporada</h2>
+          <h2 className="text-xl font-extrabold text-navy">Vacantes</h2>
           <p className="text-muted text-sm mt-0.5">
             {vacantes.filter((v) => v.estado === "ACTIVA").length} activas ·{" "}
             {vacantes.filter((v) => v.estado === "CUBIERTA").length} cubiertas
@@ -135,7 +162,7 @@ export function VacantesView({
               <>
                 {" "}
                 ·{" "}
-                <span className="text-gold font-bold">
+                <span className="text-highlight font-bold">
                   {vacantes.filter((v) => v.estado === "PENDIENTE").length} por aprobar
                 </span>
               </>
@@ -147,47 +174,65 @@ export function VacantesView({
 
       <div className={`grid grid-cols-1 md:grid-cols-2 ${procId ? "lg:grid-cols-[1fr_1fr_1.1fr]" : "lg:grid-cols-3"} gap-3.5`}>
         {vacantes.map((v) => {
-          const t = TEMPORADA_INFO[v.temporada];
+          const t = v.temporada ? TEMPORADA_INFO[v.temporada] : null;
           const contratados = v.aplicaciones.filter((a) => a.etapa === "CONTRATADO").length;
           const sel = v.id === procId;
           const esPendiente = v.estado === "PENDIENTE";
           return (
             <Card
               key={v.id}
-              className={`${esPendiente ? "" : "cursor-pointer"} ${sel ? "!border-coral !border-2" : ""}`}
+              className={`${esPendiente ? "" : "cursor-pointer"} ${sel ? "!border-accent !border-2" : ""}`}
               >
               <div onClick={() => !esPendiente && setProcId(sel ? null : v.id)}>
                 <div className="flex justify-between items-center">
                   <Badge estado={v.estado}>{v.estado}</Badge>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditandoId(v.id);
-                      }}
-                      className="text-muted hover:text-coral text-sm"
-                      title="Editar vacante"
-                    >
-                      ✏️
-                    </button>
-                    <span className="text-lg">{t.icono}</span>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditandoId(v.id);
+                    }}
+                    className="text-muted hover:text-accent"
+                    title="Editar vacante"
+                  >
+                    <Pencil size={14} />
+                  </button>
                 </div>
                 <div className="font-extrabold text-navy text-[15px] mt-2.5">{v.puesto}</div>
-                <div className="text-muted text-xs mt-0.5">📍 {v.ciudad} · {v.plazas} plaza(s)</div>
-                <div className="text-muted text-xs mt-0.5">🏢 {v.empresa.nombre}</div>
-                <div className="font-bold text-coral text-sm mt-1.5">
+                <div className="flex items-center gap-1 text-muted text-xs mt-0.5">
+                  <MapPin size={11} />
+                  {v.ciudad} · {v.plazas} plaza(s)
+                </div>
+                <div className="flex items-center gap-1 text-muted text-xs mt-0.5">
+                  <Building2 size={11} />
+                  {v.empresa.nombre}
+                </div>
+                <div className="font-bold text-accent text-sm mt-1.5">
                   {fmt(v.salario)}<span className="text-muted font-normal">/mes</span>
                 </div>
+                <div className="mt-1.5">
+                  {t ? (
+                    <span
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
+                      style={{ color: t.color, background: t.bg }}
+                    >
+                      <t.icono size={10} />
+                      {t.label}
+                    </span>
+                  ) : (
+                    <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold text-blue bg-[#E9EFF4]">
+                      {TIPO_CONTRATO_LABEL[v.tipoContrato]}
+                    </span>
+                  )}
+                </div>
                 {!esPendiente && (
-                  <div className="bg-cream rounded-lg px-2.5 py-1.5 mt-2.5 flex justify-between items-center">
+                  <div className="bg-canvas rounded-lg px-2.5 py-1.5 mt-2.5 flex justify-between items-center">
                     <span className="text-[11px] text-muted">Comisión est.</span>
-                    <span className="text-xs font-extrabold text-gold">{fmt(contratados * comision(v.salario))}</span>
+                    <span className="text-xs font-extrabold text-highlight">{fmt(contratados * comision(v.salario))}</span>
                   </div>
                 )}
                 {!esPendiente && (
-                  <div className="mt-2 text-[11px] text-coral font-bold text-right">Ver proceso →</div>
+                  <div className="mt-2 text-[11px] text-accent font-bold text-right">Ver proceso →</div>
                 )}
               </div>
               {esPendiente && (
@@ -196,14 +241,16 @@ export function VacantesView({
                     size="sm"
                     onClick={() => startTransition(async () => aprobarVacante(v.id))}
                   >
-                    ✅ Aprobar
+                    <CheckCircle2 size={13} />
+                    Aprobar
                   </Button>
                   <Button
                     size="sm"
                     variant="danger"
                     onClick={() => startTransition(async () => rechazarVacante(v.id))}
                   >
-                    ✕ Rechazar
+                    <XCircle size={13} />
+                    Rechazar
                   </Button>
                 </div>
               )}
@@ -212,9 +259,10 @@ export function VacantesView({
         })}
 
         {vAct && (
-          <Card className="!border-coral/30 !border-2 overflow-y-auto max-h-[600px]">
-            <div className="text-[11px] font-extrabold text-coral mb-1 tracking-wide">
-              ⚡ PROCESO · {vAct.puesto}
+          <Card className="!border-accent/30 !border-2 overflow-y-auto max-h-[600px]">
+            <div className="flex items-center gap-1.5 text-[11px] font-extrabold text-accent mb-1 tracking-wide">
+              <Workflow size={13} />
+              PROCESO · {vAct.puesto}
             </div>
             <div className="text-xs text-muted mb-3.5">
               {vAct.aplicaciones.filter((a) => a.etapa === "CONTRATADO").length}/{vAct.plazas} plazas cubiertas
@@ -258,20 +306,22 @@ export function VacantesView({
                       </Button>
                     )}
                     {a.etapa === "CONTRATADO" && (
-                      <span className="text-[11px] text-gold font-bold">
-                        💰 Com. {fmt(comision(vAct.salario))}
+                      <span className="flex items-center gap-1 text-[11px] text-highlight font-bold">
+                        <Wallet size={12} />
+                        Com. {fmt(comision(vAct.salario))}
                       </span>
                     )}
                     {a.candidato.telefono && (
                       <a
                         href={`https://wa.me/52${a.candidato.telefono.replace(/\D/g, "")}?text=${encodeURIComponent(
-                          `Hola ${a.candidato.nombre}, te contactamos de TalentTemp Chiapas sobre tu proceso: ${ETAPA_LABEL[a.etapa]}.`
+                          `Hola ${a.candidato.nombre}, te contactamos de ${APP_NAME} sobre tu proceso: ${ETAPA_LABEL[a.etapa]}.`
                         )}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-[11px] font-bold px-3 py-1.5 rounded-lg border border-border text-muted"
+                        className="flex items-center gap-1 text-[11px] font-bold px-3 py-1.5 rounded-lg border border-border text-muted"
                       >
-                        💬 WhatsApp
+                        <MessageCircle size={12} />
+                        WhatsApp
                       </a>
                     )}
                   </div>

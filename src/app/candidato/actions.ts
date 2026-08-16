@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { put, del } from "@vercel/blob";
+import { registrarActividad } from "@/lib/actividad";
+import { DOCUMENTOS } from "@/lib/dominio";
 
 async function requireCandidato() {
   const session = await auth();
@@ -12,6 +14,10 @@ async function requireCandidato() {
     throw new Error("No autorizado");
   }
   return session.user.candidatoId;
+}
+
+function labelDocumento(tipo: string): string {
+  return DOCUMENTOS.find((d) => d.key === tipo)?.label ?? tipo;
 }
 
 const perfilSchema = z.object({
@@ -54,9 +60,18 @@ export async function editarMiPerfil(formData: FormData) {
     },
   });
 
+  await registrarActividad({
+    tipo: "PERFIL_CANDIDATO_ACTUALIZADO",
+    descripcion: `${data.nombre} actualizó su perfil de candidato.`,
+    actorRol: "CANDIDATO",
+    actorNombre: data.nombre,
+    candidatoId,
+  });
+
   revalidatePath("/candidato");
   revalidatePath("/candidato/cuenta");
   revalidatePath("/reclutador/candidatos");
+  revalidatePath("/reclutador/actividad");
 }
 
 export async function subirMiDocumento(tipo: string, formData: FormData) {
@@ -87,7 +102,18 @@ export async function subirMiDocumento(tipo: string, formData: FormData) {
     },
   });
 
+  const candidato = await prisma.candidato.findUniqueOrThrow({ where: { id: candidatoId } });
+  await registrarActividad({
+    tipo: "DOCUMENTO_SUBIDO",
+    descripcion: `${candidato.nombre} subió su documento: ${labelDocumento(tipo)}.`,
+    actorRol: "CANDIDATO",
+    actorNombre: candidato.nombre,
+    candidatoId,
+  });
+
   revalidatePath("/candidato");
+  revalidatePath("/reclutador/candidatos");
+  revalidatePath("/reclutador/actividad");
 }
 
 export async function quitarMiDocumento(tipo: string) {
@@ -107,5 +133,17 @@ export async function quitarMiDocumento(tipo: string) {
     create: { candidatoId, tipo: tipo as never, estado: "PENDIENTE" },
     update: { estado: "PENDIENTE", nombreArchivo: null, url: null, uploadedAt: null },
   });
+
+  const candidato = await prisma.candidato.findUniqueOrThrow({ where: { id: candidatoId } });
+  await registrarActividad({
+    tipo: "DOCUMENTO_ELIMINADO",
+    descripcion: `${candidato.nombre} eliminó su documento: ${labelDocumento(tipo)}.`,
+    actorRol: "CANDIDATO",
+    actorNombre: candidato.nombre,
+    candidatoId,
+  });
+
   revalidatePath("/candidato");
+  revalidatePath("/reclutador/candidatos");
+  revalidatePath("/reclutador/actividad");
 }

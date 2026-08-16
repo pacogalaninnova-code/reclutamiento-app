@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Card, Badge, Button, Modal, Field, Input, Select } from "@/components/ui";
 import { SECTOR_LABEL, TEMPORADA_INFO } from "@/lib/dominio";
 import { crearEmpresa, eliminarEmpresa } from "./actions";
+import { MapPin, User, Mail, Phone, Trash2, type LucideIcon } from "lucide-react";
 
 type Empresa = {
   id: string;
@@ -16,6 +17,13 @@ type Empresa = {
   temporadaPrincipal: string | null;
   _count: { vacantes: number };
 };
+
+const DETALLE_ROWS: { icon: LucideIcon; label: string; key: "ciudad" | "contacto" | "email" | "telefono" }[] = [
+  { icon: MapPin, label: "Ciudad", key: "ciudad" },
+  { icon: User, label: "Contacto", key: "contacto" },
+  { icon: Mail, label: "Correo", key: "email" },
+  { icon: Phone, label: "Teléfono", key: "telefono" },
+];
 
 export function EmpresasView({ empresas }: { empresas: Empresa[] }) {
   const [showForm, setShowForm] = useState(false);
@@ -49,16 +57,29 @@ export function EmpresasView({ empresas }: { empresas: Empresa[] }) {
                   <div className="font-extrabold text-navy text-[15px]">{e.nombre}</div>
                   <span
                     className="inline-block px-2.5 py-1 rounded-full text-[11px] font-bold"
-                    style={{ color: t?.color ?? "#8892A4", background: t?.bg ?? "#F5F5F5" }}
+                    style={{ color: t?.color ?? "#64748B", background: t?.bg ?? "#F1F5F9" }}
                   >
                     {SECTOR_LABEL[e.sector]}
                   </span>
                 </div>
-                <div className="text-muted text-xs mt-1">📍 {e.ciudad}</div>
+                <div className="flex items-center gap-1 text-muted text-xs mt-1">
+                  <MapPin size={12} />
+                  {e.ciudad}
+                </div>
                 <div className="mt-3 pt-3 border-t border-border flex justify-between items-center">
                   <div>
-                    {e.contacto && <div className="text-xs text-muted">👤 {e.contacto}</div>}
-                    {e.email && <div className="text-xs text-muted mt-0.5">✉️ {e.email}</div>}
+                    {e.contacto && (
+                      <div className="flex items-center gap-1 text-xs text-muted">
+                        <User size={11} />
+                        {e.contacto}
+                      </div>
+                    )}
+                    {e.email && (
+                      <div className="flex items-center gap-1 text-xs text-muted mt-0.5">
+                        <Mail size={11} />
+                        {e.email}
+                      </div>
+                    )}
                   </div>
                   <span className="text-[11px] text-muted">{e._count.vacantes} vacante(s)</span>
                 </div>
@@ -90,9 +111,9 @@ export function EmpresasView({ empresas }: { empresas: Empresa[] }) {
             <Field label="Ciudad">
               <Input name="ciudad" placeholder="Ej: Tuxtla Gutiérrez" required />
             </Field>
-            <Field label="Temporada principal">
+            <Field label="Temporada principal (opcional)">
               <Select name="temporadaPrincipal" defaultValue="">
-                <option value="">Seleccionar...</option>
+                <option value="">Ninguna / No aplica</option>
                 {Object.entries(TEMPORADA_INFO).map(([k, v]) => (
                   <option key={k} value={k}>{v.label}</option>
                 ))}
@@ -126,19 +147,19 @@ export function EmpresasView({ empresas }: { empresas: Empresa[] }) {
           <div className="flex gap-2 mb-3.5">
             <Badge>{SECTOR_LABEL[detalle.sector]}</Badge>
           </div>
-          {[
-            ["📍", "Ciudad", detalle.ciudad],
-            ["👤", "Contacto", detalle.contacto],
-            ["✉️", "Correo", detalle.email],
-            ["📞", "Teléfono", detalle.telefono],
-          ].map(([icon, label, value]) =>
-            value ? (
-              <div key={label} className="py-2.5 border-b border-border">
-                <span className="text-muted text-xs mr-2">{icon} {label}</span>
+          {DETALLE_ROWS.map(({ icon: Icon, label, key }) => {
+            const value = detalle[key];
+            if (!value) return null;
+            return (
+              <div key={label} className="flex items-center py-2.5 border-b border-border">
+                <span className="flex items-center gap-1.5 text-muted text-xs mr-2 shrink-0">
+                  <Icon size={13} />
+                  {label}
+                </span>
                 <span className="font-semibold text-sm">{value}</span>
               </div>
-            ) : null
-          )}
+            );
+          })}
           <div className="mt-4 flex justify-end">
             <Button
               variant="danger"
@@ -150,7 +171,8 @@ export function EmpresasView({ empresas }: { empresas: Empresa[] }) {
                 });
               }}
             >
-              🗑️ Eliminar empresa
+              <Trash2 size={13} />
+              Eliminar empresa
             </Button>
           </div>
         </Modal>

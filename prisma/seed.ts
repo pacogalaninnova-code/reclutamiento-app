@@ -9,11 +9,11 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   const passwordAdmin = await bcrypt.hash("chiapas2025", 10);
   await prisma.usuario.upsert({
-    where: { email: "reclutador@talenttemp.mx" },
+    where: { email: "reclutador@talenta.mx" },
     create: {
-      email: "reclutador@talenttemp.mx",
+      email: "reclutador@talenta.mx",
       passwordHash: passwordAdmin,
-      nombre: "Admin TalentTemp",
+      nombre: "Admin Talenta",
       rol: "ADMIN",
     },
     update: {},
@@ -64,11 +64,25 @@ async function main() {
     update: {},
   });
 
+  const constructora = await prisma.empresa.upsert({
+    where: { id: "seed-emp-4" },
+    create: {
+      id: "seed-emp-4",
+      nombre: "Constructora Andina",
+      sector: "CONSTRUCCION",
+      ciudad: "Tuxtla Gutiérrez",
+      contacto: "Patricia Nuñez",
+      email: "pnunez@construandina.mx",
+      telefono: "9611009988",
+    },
+    update: {},
+  });
+
   const passwordEmpresa = await bcrypt.hash("empresa2025", 10);
   await prisma.usuario.upsert({
-    where: { email: "cervesur@talenttemp.mx" },
+    where: { email: "cervesur@talenta.mx" },
     create: {
-      email: "cervesur@talenttemp.mx",
+      email: "cervesur@talenta.mx",
       passwordHash: passwordEmpresa,
       nombre: "Cervecería del Sur",
       rol: "EMPRESA",
@@ -126,6 +140,18 @@ async function main() {
       disponibilidad: "Inmediata",
       salarioEsperado: 8000,
     },
+    {
+      id: "seed-cand-5",
+      nombre: "Mariana Cruz",
+      edad: 29,
+      ciudad: "Tuxtla Gutiérrez",
+      telefono: "9611234567",
+      email: "mariana.cruz@gmail.com",
+      experiencia: "6 años en contabilidad y finanzas corporativas",
+      sectores: ["FINANZAS", "ADMINISTRACION"],
+      disponibilidad: "15 días",
+      salarioEsperado: 18000,
+    },
   ] as const;
 
   for (const c of candidatosData) {
@@ -159,6 +185,7 @@ async function main() {
       ciudad: "Tuxtla Gutiérrez",
       plazas: 5,
       salario: 6500,
+      tipoContrato: "TEMPORAL",
       temporada: "SEMANA_SANTA",
       estado: "ACTIVA",
     },
@@ -175,6 +202,7 @@ async function main() {
       ciudad: "Tuxtla Gutiérrez",
       plazas: 8,
       salario: 7200,
+      tipoContrato: "TEMPORAL",
       temporada: "FIN_DE_ANO",
       estado: "ACTIVA",
     },
@@ -191,6 +219,7 @@ async function main() {
       ciudad: "San Cristóbal",
       plazas: 4,
       salario: 5800,
+      tipoContrato: "TEMPORAL",
       temporada: "VERANO",
       estado: "CUBIERTA",
     },
@@ -223,9 +252,36 @@ async function main() {
     update: {},
   });
 
+  const vacantePermanente = await prisma.vacante.upsert({
+    where: { id: "seed-vac-4" },
+    create: {
+      id: "seed-vac-4",
+      empresaId: constructora.id,
+      puesto: "Contador General",
+      sector: "FINANZAS",
+      ciudad: "Tuxtla Gutiérrez",
+      plazas: 1,
+      salario: 18000,
+      tipoContrato: "PERMANENTE",
+      estado: "ACTIVA",
+    },
+    update: {},
+  });
+
+  await prisma.aplicacion.upsert({
+    where: { vacanteId_candidatoId: { vacanteId: vacantePermanente.id, candidatoId: "seed-cand-5" } },
+    create: {
+      vacanteId: vacantePermanente.id,
+      candidatoId: "seed-cand-5",
+      etapa: "DOCUMENTOS",
+      termometro: 8,
+    },
+    update: {},
+  });
+
   console.log("Seed completo.");
-  console.log("Reclutador:  reclutador@talenttemp.mx / chiapas2025");
-  console.log("Empresa:     cervesur@talenttemp.mx / empresa2025");
+  console.log("Reclutador:  reclutador@talenta.mx / chiapas2025");
+  console.log("Empresa:     cervesur@talenta.mx / empresa2025");
   console.log("Candidato:   sofia.hdz@gmail.com / candidato2025");
 }
 
